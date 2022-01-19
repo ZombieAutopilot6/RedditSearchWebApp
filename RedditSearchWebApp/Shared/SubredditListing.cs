@@ -2,6 +2,7 @@
 {
     public class SubredditListing
     {
+        //// Pasted JSON as classes from Reddit subreddit listing result.
         public class Rootobject
         {
             public string? kind { get; set; }

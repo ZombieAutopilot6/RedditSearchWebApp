@@ -92,6 +92,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Check if there saved search values for the session.
         postSearchVal = await SessionStorage.GetItemAsync<string>("postSearchVal");
         subredditSearchVal = await SessionStorage.GetItemAsync<string>("subredditSearchVal");
 
@@ -103,17 +104,21 @@
 
     private async Task SearchReddit()
     {
+        // Don't make API call if no search value.
         if (!string.IsNullOrEmpty(postSearchVal))
         {
             var postJsonData = await HttpClient.GetFromJsonAsync<PostListing.Rootobject>($"{baseUrl}{searchCmd}{postSearchVal}");
             posts = postJsonData?.data?.children;
+            // Save search value to session storage to maintain search values when navigating away from page.
             await SessionStorage.SetItemAsync("postSearchVal", postSearchVal);
         }
 
+        // Don't make API call if no search value.
         if (!string.IsNullOrEmpty(subredditSearchVal))
         {
             var subredditJsonData = await HttpClient.GetFromJsonAsync<SubredditListing.Rootobject>($"{baseUrl}{searchCmd}{subredditSearchVal}{subredditCmd}");
             subreddits = subredditJsonData?.data?.children;
+            // Save search value to session storage to maintain search values when navigating away from page.
             await SessionStorage.SetItemAsync("subredditSearchVal", subredditSearchVal);
         }
     }

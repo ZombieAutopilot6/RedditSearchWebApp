@@ -2,7 +2,7 @@
 {
     public class PostListing
     {
-
+        // Pasted JSON as classes from Reddit post listing result.
         public class Rootobject
         {
             public string? kind { get; set; }
