@@ -1,0 +1,133 @@
+﻿@page "/"
+@page "/redditsearch"
+@using RedditSearchWebApp.Shared
+@using Blazored.SessionStorage
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@inject Blazored.SessionStorage.ISessionStorageService SessionStorage
+
+<PageTitle>Reddit Search</PageTitle>
+
+<h1>Reddit Search</h1>
+
+<div class="row">
+    <div class="col-sm-5">
+        <label for="postInput">Search Posts</label>
+        <input type="text" class="form-control" id="postInput" @bind="postSearchVal" />
+    </div>
+    <div class="col-sm-5">
+        <label for="subredditInput">Search Subreddits</label>
+        <input type="text" class="form-control" id="subredditInput" @bind="subredditSearchVal" />
+    </div>
+    <div class="col-sm-2">
+        <button class="btn btn-primary form-control" style="width:100%; margin-top:24px;" type="button" @onclick="@(async () => await SearchReddit())">Search</button>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-sm-5">
+        @if (posts != null && posts.Count() > 0)
+        {
+            <table class="table table-sm table-bordered table-striped table-dark">
+                <thead>
+                    <tr>
+                        <th>Post</th>
+                        <th>Subreddit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var post in posts)
+                    {
+                        <tr>
+                            <td>
+                                <button class="btn btn-link text-start" @onclick="() => NavigateToPost(post.data?.url)">@post.data?.title?.Trim()</button>
+                            </td>
+                            <td>
+                                @post.data?.subreddit_name_prefixed
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="col-sm-5">
+        @if (subreddits != null && subreddits.Count() > 0)
+        {
+            <table class="table table-sm table-bordered table-striped table-dark">
+                <thead>
+                    <tr>
+                        <th>Subreddit</th>
+                        <th>Subscribers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var subreddit in subreddits)
+                    {
+                        <tr>
+                            <td>
+                                <button class="btn btn-link" @onclick="() => NavigateToSubreddit(subreddit.data?.url)">@subreddit.data?.display_name_prefixed</button>
+                            </td>
+                            <td>
+                                @subreddit.data?.subscribers
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+
+
+@code {
+    private const string baseUrl = "https://www.reddit.com";
+    private const string searchCmd = "/search.json?q=";
+    private const string subredditCmd = "&type=sr";
+    private string? postSearchVal;
+    private string? subredditSearchVal;
+    private PostListing.Child[]? posts { get; set; }
+    private SubredditListing.Child[]? subreddits { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        postSearchVal = await SessionStorage.GetItemAsync<string>("postSearchVal");
+        subredditSearchVal = await SessionStorage.GetItemAsync<string>("subredditSearchVal");
+
+        if (!string.IsNullOrEmpty(postSearchVal) || !string.IsNullOrEmpty(subredditSearchVal))
+        {
+            await SearchReddit();
+        }
+    }
+
+    private async Task SearchReddit()
+    {
+        if (!string.IsNullOrEmpty(postSearchVal))
+        {
+            var postJsonData = await HttpClient.GetFromJsonAsync<PostListing.Rootobject>($"{baseUrl}{searchCmd}{postSearchVal}");
+            posts = postJsonData?.data?.children;
+            await SessionStorage.SetItemAsync("postSearchVal", postSearchVal);
+        }
+
+        if (!string.IsNullOrEmpty(subredditSearchVal))
+        {
+            var subredditJsonData = await HttpClient.GetFromJsonAsync<SubredditListing.Rootobject>($"{baseUrl}{searchCmd}{subredditSearchVal}{subredditCmd}");
+            subreddits = subredditJsonData?.data?.children;
+            await SessionStorage.SetItemAsync("subredditSearchVal", subredditSearchVal);
+        }
+    }
+
+    private void NavigateToSubreddit(string? url)
+    {
+        NavigationManager.NavigateTo($"{baseUrl}{url}");
+    }
+
+    private void NavigateToPost(string? url)
+    {
+        if (!string.IsNullOrEmpty(url))
+        {
+            NavigationManager.NavigateTo(url);
+        }
+    }
+}
